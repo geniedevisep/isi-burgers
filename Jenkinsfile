@@ -56,7 +56,9 @@ pipeline {
                 }
             }
         }
+    }  // Cette accolade fermante était manquante
 
+    stages {  // Cette déclaration était manquante
         stage('Package Artifact') {
             steps {
                 script {
@@ -64,7 +66,7 @@ pipeline {
                     bat 'tar -czf isi-burger.tar.gz --exclude=node_modules --exclude=vendor .'
                 }
             }
-        }kubectl get pods -n monitoring
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -92,6 +94,9 @@ pipeline {
         }
 
         stage('Deploy to Dev') {
+            when {
+                branch 'aissatou_niass_burger'
+            }
             steps {
                 script {
                     try {
