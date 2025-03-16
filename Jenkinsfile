@@ -98,16 +98,122 @@ pipeline {
             steps {
                 script {
                     try {
-                        // Mise à jour des variables d'environnement dans docker-compose
+                        // Vérification de l'existence des conteneurs
+                        bat 'docker ps -q -f name=isi-burger-* | findstr . && docker-compose -f docker-compose.dev.yml down || echo "No containers to remove"'
+                        
+                        // Configuration des variables d'environnement
+                        withEnv(["DOCKER_REGISTRY=${DOCKER_REGISTRY}",
+                                "DOCKER_IMAGE=${DOCKER_IMAGE}",
+                                "DOCKER_TAG=${DOCKER_TAG}"]) {
+                            
+                            // Déploiement avec Docker Compose
+                            bat 'docker-compose -f docker-compose.dev.yml up -d'
+                            
+                            // Vérification du déploiement
+                            bat 'docker ps'
+                            
+                            // Attente que l'application soit prête
+                            bat 'timeout /t 30'
+                            
+                            // Test de l'application
+                            bat 'curl http://localhost:8000'
+                        }
+                    } catch (Exception e) {
+                        error "Échec du déploiement en dev: ${e.message}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            when {
+                branch 'staging'
+            }
+            steps {
+                script {
+                    try {
+                        // Vérification de kubectl
+                        bat 'kubectl version'
+                        
+                        // Application des manifestes Kubernetes
                         bat """
-                            set DOCKER_REGISTRY=%DOCKER_REGISTRY%
-                            set DOCKER_IMAGE=%DOCKER_IMAGE%
-                            set DOCKER_TAG=%DOCKER_TAG%
-                            docker-compose -f docker-compose.dev.yml down
-                            docker-compose -f docker-compose.dev.yml up -d
+                            kubectl apply -f k8s/namespace.yaml
+                            kubectl apply -f k8s/deployment.yaml
+                            kubectl apply -f k8s/service.yaml
+                            kubectl apply -f k8s/ingress.yaml
+                        """
+                        
+                        // Vérification du déploiement
+                        bat 'kubectl get pods -n staging'
+                    } catch (Exception e) {
+                        error "Échec du déploiement en staging: ${e.message}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Preprod') {
+            when {
+                branch 'preprod'
+            }
+            steps {
+                script {
+                    try {
+                        // Déploiement sur le cloud (exemple avec Azure)
+                        withCredentials([azureServicePrincipal('AZURE_CREDENTIALS')]) {
+                            bat """
+                                az login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% -t %AZURE_TENANT_ID%
+                                az webapp deployment source config-zip --resource-group myResourceGroup --name myWebApp-preprod --src isi-burger.tar.gz
+                            """
+                        }
+                    } catch (Exception e) {
+                        error "Échec du déploiement en preprod: ${e.message}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
+            input {
+                message "Déployer en production?"
+                ok "Oui, déployer"
+            }
+            steps {
+                script {
+                    try {
+                        // Déploiement sur le cloud (exemple avec Azure)
+                        withCredentials([azureServicePrincipal('AZURE_CREDENTIALS')]) {
+                            bat """
+                                az login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% -t %AZURE_TENANT_ID%
+                                az webapp deployment source config-zip --resource-group myResourceGroup --name myWebApp-prod --src isi-burger.tar.gz
+                            """
+                        }
+                    } catch (Exception e) {
+                        error "Échec du déploiement en production: ${e.message}"
+                    }
+                }
+            }
+        }
+
+        stage('Setup Monitoring') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    try {
+                        // Déploiement de Prometheus et Grafana
+                        bat """
+                            kubectl apply -f monitoring/prometheus-config.yaml
+                            kubectl apply -f monitoring/prometheus-deployment.yaml
+                            kubectl apply -f monitoring/grafana-deployment.yaml
+                            kubectl apply -f monitoring/grafana-service.yaml
                         """
                     } catch (Exception e) {
-                        error "Échec du déploiement"
+                        error "Échec de la configuration du monitoring: ${e.message}"
                     }
                 }
             }
