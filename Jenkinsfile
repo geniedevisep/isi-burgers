@@ -18,9 +18,8 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'composer install --no-interaction --no-progress'
-                sh 'npm install'
-                sh 'npm run build'
+                bat 'composer install'
+                bat 'npm install'
             }
         }
 
@@ -28,12 +27,12 @@ pipeline {
             parallel {
                 stage('Unit Tests') {
                     steps {
-                        sh 'php artisan test'
+                        bat 'vendor\\bin\\phpunit'
                     }
                 }
                 stage('Frontend Tests') {
                     steps {
-                        sh 'npm run test'
+                        bat 'npm test'
                     }
                 }
             }
@@ -42,41 +41,33 @@ pipeline {
         stage('Code Quality') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'sonar-scanner \
-                        -Dsonar.projectKey=isi-burger \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://localhost:9000'
+                    bat 'sonar-scanner.bat -Dsonar.projectKey=isi-burger -Dsonar.sources=.'
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    docker.build("${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}")
-                }
+                bat "docker build -t %DOCKER_REGISTRY%/%DOCKER_IMAGE%:%DOCKER_TAG% ."
             }
         }
 
         stage('Push to Registry') {
             steps {
-                script {
-                    docker.withRegistry("https://${DOCKER_REGISTRY}", DOCKER_CREDENTIALS) {
-                        docker.image("${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}").push()
-                    }
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS% %DOCKER_REGISTRY%'
+                    bat 'docker push %DOCKER_REGISTRY%/%DOCKER_IMAGE%:%DOCKER_TAG%'
                 }
             }
         }
 
         stage('Deploy to Dev') {
             when {
-                branch 'fatou_diop_burger'
+                branch 'aissatou_niass_burger'
             }
             steps {
-                sh """
-                    docker-compose -f docker-compose.dev.yml down
-                    docker-compose -f docker-compose.dev.yml up -d
-                """
+                bat 'docker-compose -f docker-compose.dev.yml down'
+                bat 'docker-compose -f docker-compose.dev.yml up -d'
             }
         }
     }
@@ -84,6 +75,12 @@ pipeline {
     post {
         always {
             cleanWs()
+        }
+        failure {
+            echo 'Le pipeline a échoué'
+        }
+        success {
+            echo 'Le pipeline a réussi'
         }
     }
 } 
