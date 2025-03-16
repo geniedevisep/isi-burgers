@@ -1,0 +1,89 @@
+:root {
+    --primary: #fd7e14;
+    --light: #F1F8FF;
+    --dark: #0F172B;
+}
+
+/* Styles globaux */
+body {
+    background-color: var(--light);
+    color: var(--dark);
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--dark) !important;
+}
+
+.navbar-dark .navbar-nav .nav-link {
+    color: var(--light);
+}
+
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-dark .navbar-nav .nav-link.active {
+    color: var(--primary);
+}
+
+/* Boutons */
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--light);
+}
+
+.btn-primary:hover {
+    background-color: #e67211;
+    border-color: #e67211;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: var(--dark);
+    color: var(--light);
+}
+
+/* Footer */
+.footer {
+    background-color: var(--dark);
+    color: var(--light);
+}
+
+/* Hero section (page d'accueil uniquement) */
+.hero-section {
+    background-image: url('/images/hero-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    padding: 150px 0;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 43, 0.7);
+}
+
+/* Tables */
+.table thead th {
+    background-color: var(--dark);
+    color: var(--light);
+}
+
+/* Pagination */
+.page-link {
+    color: var(--primary);
+}
+
+.page-item.active .page-link {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
