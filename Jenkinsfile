@@ -56,13 +56,10 @@ pipeline {
                 }
             }
         }
-    }  // Cette accolade fermante était manquante
 
-    stages {  // Cette déclaration était manquante
         stage('Package Artifact') {
             steps {
                 script {
-                    // Création d'une archive du projet
                     bat 'tar -czf isi-burger.tar.gz --exclude=node_modules --exclude=vendor .'
                 }
             }
