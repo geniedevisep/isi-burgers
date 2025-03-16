@@ -13,6 +13,7 @@ spec:
       labels:
         app: isi-burger
     spec:
+      serviceAccountName: isi-burger-sa
       containers:
       - name: app
         image: localhost:5000/isi-burger:7
