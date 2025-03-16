@@ -15,21 +15,24 @@ spec:
     spec:
       containers:
       - name: app
-        image: ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}
+        image: localhost:5000/isi-burger:7
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9000
-        resources:
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
-          requests:
-            cpu: "200m"
-            memory: "256Mi"
         env:
         - name: APP_ENV
           value: "staging"
         - name: DB_HOST
           value: "mysql-service"
+        - name: DB_DATABASE
+          value: "isi_burger"
+        - name: DB_USERNAME
+          value: "root"
+        - name: DB_PASSWORD
+          value: "root"
+        volumeMounts:
+        - name: app-storage
+          mountPath: /var/www/storage
       - name: nginx
         image: nginx:alpine
         ports:
@@ -38,6 +41,8 @@ spec:
         - name: nginx-config
           mountPath: /etc/nginx/conf.d
       volumes:
+      - name: app-storage
+        emptyDir: {}
       - name: nginx-config
         configMap:
           name: nginx-config 
